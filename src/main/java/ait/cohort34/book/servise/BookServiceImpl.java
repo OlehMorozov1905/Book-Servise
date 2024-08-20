@@ -24,9 +24,9 @@ public class BookServiceImpl implements BookService {
 
     final BookRepository bookRepository;
     final AuthorRepository authorRepository;
-    final PublisherRepository publisher;
+    final PublisherRepository publisherRepository;
     final ModelMapper modelMapper;
-    private final PublisherRepository publisherRepository;
+
 
     @Transactional
     @Override
@@ -36,12 +36,12 @@ public class BookServiceImpl implements BookService {
         }
         //Publisher handle
         Publisher publisher = publisherRepository.findById(bookDto.getPublisher())
-                .orElse(publisherRepository.save(new Publisher(bookDto.getPublisher())));
+                .orElseGet(() -> publisherRepository.save(new Publisher(bookDto.getPublisher())));
         //Authors handle;
         Set<Author> authors = bookDto.getAuthors()
                 .stream()
                 .map(a -> authorRepository.findById(a.getName())
-                        .orElse(authorRepository.save(new Author(a.getName(), a.getBirthDate()))))
+                        .orElseGet(() -> authorRepository.save(new Author(a.getName(), a.getBirthDate()))))
                 .collect(Collectors.toSet());
         Book book = new Book(bookDto.getIsbn(), bookDto.getTitle(), authors, publisher);
         bookRepository.save(book);
@@ -58,7 +58,7 @@ public class BookServiceImpl implements BookService {
     @Override
     public BookDto removeBookByIsbn(String isbn) {
         Book book = bookRepository.findById(isbn).orElseThrow(EntityNotFoundException::new);
-        bookRepository.delete(book);
+        bookRepository.deleteById(book);
         return modelMapper.map(book, BookDto.class);
     }
 
